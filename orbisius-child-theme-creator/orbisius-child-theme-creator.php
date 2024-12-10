@@ -3,7 +3,7 @@
   Plugin Name: Orbisius Child Theme Creator
   Plugin URI: https://orbisius.com/products/wordpress-plugins/orbisius-child-theme-creator/
   Description: This plugin allows you to quickly create child themes from any theme that you have currently installed on your site/blog.
-  Version: 1.5.5
+  Version: 1.5.6
   Author: Svetoslav Marinov (Slavi)
   Author URI: https://orbisius.com
  */
@@ -43,7 +43,6 @@ add_action('wp_before_admin_bar_render', 'orbisius_child_theme_creator_admin_bar
 add_action( 'wp_ajax_orbisius_ctc_theme_editor_ajax', 'orbisius_ctc_theme_editor_ajax');
 add_action( 'wp_ajax_nopriv_orbisius_ctc_theme_editor_ajax', 'orbisius_ctc_theme_editor_no_auth_ajax');
 
-
 register_activation_hook( __FILE__, 'orbisius_child_theme_creator_on_activate' );
 
 require_once( ORBISIUS_CHILD_THEME_CREATOR_BASE_DIR . '/lib/result.php' );
@@ -72,6 +71,32 @@ function orbisius_child_theme_creator_on_activate() {
     if (empty($opts['setup_time'])) {
         $opts['setup_time'] = time();
         orbisius_child_theme_creator_set_options($opts);
+    }
+}
+
+add_action( 'orbisius_child_theme_creator_action_auth', 'orbisius_child_theme_creator_ensure_auth');
+
+/**
+ * @param array $ctx
+ * @return void
+ * @throws Exception
+ */
+function orbisius_child_theme_creator_ensure_auth($ctx = [])
+{
+    $user_api_obj = orbisius_child_theme_creator_user::get_instance();
+
+    if ($user_api_obj->has_access()) {
+        return;
+    }
+
+    $msg = __('Cannot complete operation or not enough access.', 'orbisius-child-theme-creator');
+
+    if (wp_doing_ajax()) {
+        $req_res = new orbisius_child_theme_creator_result();
+        $req_res->msg = $msg;
+        wp_send_json($req_res);
+    } else {
+        wp_die($msg);
     }
 }
 
@@ -423,7 +448,12 @@ function orbisius_child_theme_creator_settings_page() {
                                     <li>Customize the child theme</li>
                                 </ul>
 
-                                <iframe width="560" height="315" src="https://youtube-nocookie.com/embed/BZUVq6ZTv-o" frameborder="0" allowfullscreen></iframe>
+                                <iframe width="560" height="315"
+                                        src="https://youtube-nocookie.com/embed/BZUVq6ZTv-o"
+                                        frameborder="0"
+                                        allow="encrypted-media"
+                                        allowfullscreen>
+                                </iframe>
 
                             </div> <!-- .inside -->
 
